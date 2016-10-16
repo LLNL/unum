@@ -1,0 +1,151 @@
+/* pg 4
+Definition: A #unum# is a bit string of variable length that has six 
+sub-fields: Sign bit, exponent, fraction, uncertainty bit, exponent 
+size, and fraction size. 
+*/
+
+/* pg 4
+Definition: The #ubit# is a bit in the unum format that is 0 if a unum 
+is exact and 1 if the unum represents the open interval between two 
+exact unums. 
+*/
+
+/* pg 26
+Definition: The #down-arrow# symbol, when placed at the end of a set of 
+displayed fraction digits, emphasizes that all digits to the right are 
+zero; the fraction shown is exact. 
+*/
+
+/* pg 26
+Definition: The #ubit# (uncertainty bit) is a bit at the end of a 
+fraction that is 0 if the fraction is exact, 1 if there are more nonzero 
+bits in the fraction but no space to store them in the particular format 
+settings of the unum. 
+*/
+
+/* pg 26
+Definition: An #ULP# (rhymes with gulp) is the difference between exact 
+values represented by bit strings that differ by one Unit in the Last 
+Place, the last bit of the fraction. 
+*/
+
+/* pg 28
+Definition: The value #maxreal# is the largest finite value that a 
+format can express. It is one ULP less than the representation of 
+infinity. 
+*/
+
+/* pg 29
+Definition: The value#smallsubnormal# is the smallest value greater than 
+zero that a format can express. It is one ULP larger than zero. 
+*/
+
+/* pg 39
+Definition: The #esizesize# is the number of bits allocated to store the 
+maximum number of bits in the exponent field of a unum. The number of 
+exponent bits, #es#, ranges from 1 to 2^esizesize. 
+*/
+
+/* pg 39
+Definition: The #fsizesize# is the number of bits allocated to store the 
+maximum number of bits in the fraction field of a unum. The number of 
+fraction bits, #fs#, ranges from 1 to 2^fsizesize. 
+*/
+
+/* pg 40
+Definition: The #utag# is the set of three self-descriptive fields that 
+distinguish a unum from a float. The ubit, the exponent size bits, and 
+the fraction size bits. 
+*/
+
+/* pg 40
+Definition: The #utagsize# is the length (in number of bits) of the 
+utag. Its value is 1 + esizesize + fsizesize. 
+*/
+
+/* pg 40
+Definition: #maxubits# is the maximum number of bits a unum can have. 
+Its value is 2 + esizesize + fsizesize + 2^esizesize + 2^fsizesize. 
+*/
+
+/* pg 62
+Definition: A #ubound# is a single unum or a pair of unums that 
+represent a mathematical interval of the real line. Closed endpoints are 
+represented by exact unums, and open endpoints are represented by 
+inexact unums. 
+*/
+
+/* pg 63
+Definition: The #u-layer# is the level of computer arithmetic where all 
+the operands are unums (and data structures made from unums, like 
+ubounds). 
+*/
+
+/* pg 65
+Definition: A #gbound# is the data structure used for temporary 
+calculations at higher precision than in the unum environment; that is, 
+the scratchpad. 
+*/
+
+/* pg 66
+Definition: The #g-layer# is the scratchpad where results are computed 
+such that they are always correct to the smallest representable 
+uncertainty when they are returned to the u-layer. 
+*/
+
+/* pg 74
+Definition: The #h-layer# is where numbers (and exception quantities) 
+are represented in a form understandable to humans. 
+*/
+
+/* pg 93
+Definition: The #Warlpiri unums# use the smallest format possible, a
+[0, 0] environment. They have a sign bit, an exponent bit, a fraction
+bit, and a ubit. 
+*/
+
+/* pg 100
+Definition: A #summary bit# indicates a crucial feature of a unum that 
+can otherwise be derived only be examining combinations of bits; it is 
+used to save time and effort by "decoding" attributes of a unum. 
+*/
+
+/* pg 199
+Definition: A #ubox# is a shape in n-dimensional space that is 
+represented by a list of n unums. 
+*/
+
+/* pg 199
+Definition: In computing, a #c-solution# to a problem involving real 
+numbers is the smallest complete set of uboxes that satisfy the problem 
+statement. 
+*/
+
+/* pg 210
+Definition: #Information#, in the context of a particular computing 
+question, is the reciprocal of the total volume of a set that bounds the 
+answer. 
+*/
+
+/* pg 211
+Definition: In the context of a particular computing task, 
+#computational speed# is information achieved per second. 
+*/
+
+/* pg 216
+Definition: The #wrapping problem# is excessively large bounds in 
+interval calculations caused by bounding a multidimensional result set 
+with a single axis-aligned box (that is, a simple bound in each 
+dimension. 
+*/
+
+/* pg 220
+Definition: The #dependency problem# is the excessively large bounds in 
+interval calculations caused by treating multiple occurrences of the 
+same variable as if they were independent, when they are not. 
+*/
+
+/* pg 257
+Definition: A #guess# is an exact representable value selected from (or 
+adjacent to) a range of real values. 
+*/

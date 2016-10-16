@@ -1,0 +1,7 @@
+
+pg 48, Section 4.9: page 48 duplicated.
+pg 347, Section C: missing [x] in guard condition.
+pg 348, Section C.1: posbig is not defined, used in plusg (pg 362) and expg (pg 377), same as maxreal?
+pg 351, Section C.3: utag[] function does not include ubit.
+pg 360, Section C.8: should not have slash in "tilde tilde" in comment (* Assign the "not nowhere equal" test the "tilde tilde" infix symbol. *)
+pg 363, Section C.9: plusu[] function argument names (u_ & v_) do not match what is used in the function.

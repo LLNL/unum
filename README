@@ -1,0 +1,80 @@
+Copyright (c) 2016, Lawrence Livermore National Security, LLC.
+Produced at the Lawrence Livermore National Laboratory.
+Written by G. Scott Lloyd, lloyd23@llnl.gov.
+LLNL-CODE-704762.
+All rights reserved.
+
+This file is part of Unum.
+For details, see http://github.com/LLNL/unum
+Please also read COPYING.
+
+--------------------------------------------------------------------------------
+
+This floating-point arithmetic library contains a software 
+implementation of Universal Numbers (unums) in 'C' as described by 
+John Gustafson in the book "The End of Error: Unum Computing". The 
+implementation is patterned after the prototype code printed in the 
+book. A download of the Mathematica code is available from the 
+publisher's website: 
+
+http://www.crcpress.com/The-End-of-Error-Unum-Computing/Gustafson/9781482239867
+
+Since this 'C' implementation uses names common with the Mathematica 
+implementation, the book can be used as a form of documentation to help 
+understand the source code. The unum library uses the GNU Multiple 
+Precision (GMP) Arithmetic Library for the low-level arithmetic. GMP 
+(http://gmplib.org/) must be installed or accessible on your system to 
+build and use the unum library. If you don't install GMP to a standard 
+location, you can define the following environment variables before 
+running "./configure". 
+
+export CPPFLAGS=-I<path to GMP include>
+export LDFLAGS=-L<path to libgmp>
+
+Some additional documentation about the unum package can be found in the 
+"doc" directory. 
+
+After configuring the distribution with "./configure", existing test 
+programs can be executed in a batch by running "make check" from the top 
+level directory of the distribution. Once built, they can be 
+individually run at the command line from the "tests" directory. 
+
+To help in writing unum test programs, an example "tests/tdev.c" is 
+provided. Test programs can be built individually with the standalone 
+make file "tests/tdev.mak" that is not part of the autotools build 
+system. This make file is handy when making frequent changes to the unum 
+library source code since it compiles and links the individual source 
+files with a test without the overhead of autotools and building the 
+library archive. 
+
+The library supports creation of unums and printing of unum values. It 
+also supports variable sized unums from a few bits up to thousands. 
+Functions are available that convert between unums and primitive 'C' 
+types. The relational operators, four arithmetic operators (add, 
+subtract, multiply and divide), and square root are also implemented. 
+The guess function, when applied to a unum after an arithmetic 
+operation, will produce a rounded result much like a floating-point 
+calculation. 
+
+Three main interfaces to unum functionality are available in the "src"
+directory:
+ * unumxx.h – 'C++' wrapper class that allows unums (actually ubounds)
+               to be used with the standard arithmetic operators
+ * unum.h   – 'C' function interface that stores unums in a variable length
+               byte array
+ * ubnd.h   – 'C' function interface that stores unums in a data structure
+
+The C++ wrapper class will generate calls to the ubnd.h interface. 
+Within a program, unums are defined with the "ubnd_c" type and may be 
+used in place of "floats" and "doubles". A simple example is shown in 
+the "tunumxx.cpp" test program. The unum environment must be set with 
+the set_uenv() function before any operations occur with unums. Existing 
+applications modified to use unums will likely need to have "AUTO_GUESS" 
+defined at compile time. This will automatically insert calls to the 
+unum guess function at every assignment. 
+
+Operations on unums through the library are several thousand times 
+slower than operations on IEEE standard types with floating-point 
+hardware. While faster implementations of the library are possible, the 
+intent of this implementation is to provide flexibility for research 
+purposes and accurate results. 
