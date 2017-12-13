@@ -2,7 +2,8 @@
 # This Makefile.am is free software; the Free Software Foundation
 # gives unlimited permission to copy, distribute and modify it.
 
-check_PROGRAMS = tbasic tulayer tunumxx
+check_PROGRAMS = tbasic tulayer tunumxx tcomparison
+
 tunumxx_SOURCES = tunumxx.cpp
 EXTRA_DIST = tdev.mak tdevxx.mak tdev.c
 AM_CPPFLAGS = -I$(top_srcdir)/src

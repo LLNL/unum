@@ -1126,7 +1126,7 @@ void g2u(ubnd_s *a, const gbnd_s *g)
 		   this allows a close but incorrect number to pass through. */
 		( (g->l.open   ^  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0)
 #else
-		( (g->l.open  ||  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0)
+		( (g->l.open  ||  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0 && (!(g->l.inf ^ g->r.inf)))
 #endif
 		)
 	{
@@ -1219,7 +1219,7 @@ void g2ur(ubnd_s *a, const gbnd_s *g)
 		   this allows a close but incorrect number to pass through. */
 		( (g->l.open   ^  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0)
 #else
-		( (g->l.open  ||  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0)
+		( (g->l.open  ||  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0 && (!(g->l.inf ^ g->r.inf)))
 #endif
 		)
 	{
