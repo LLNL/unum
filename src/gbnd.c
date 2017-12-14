@@ -87,7 +87,7 @@ int ltgQ(const gbnd_s *g, const gbnd_s *h)
 			(  g->r.inf  && !h->l.inf   && mpf_sgn(g->r.f) < 0) ||
 			(! g->r.inf  &&  h->l.inf   && mpf_sgn(h->l.f) > 0) ||
 			(!(g->r.inf   ^  h->l.inf)  && mpf_cmp(g->r.f, h->l.f)  < 0) ||
-			( (g->r.open ||  h->l.open) && mpf_cmp(g->r.f, h->l.f) == 0)
+			( (g->r.open ||  h->l.open) && mpf_cmp(g->r.f, h->l.f) == 0 && (!(g->r.inf ^ h->l.inf)))
 		);
 }
 
@@ -100,7 +100,7 @@ int gtgQ(const gbnd_s *g, const gbnd_s *h)
 			(  g->l.inf  && !h->r.inf   && mpf_sgn(g->l.f) > 0) ||
 			(! g->l.inf  &&  h->r.inf   && mpf_sgn(h->r.f) < 0) ||
 			(!(g->l.inf   ^  h->r.inf)  && mpf_cmp(g->l.f, h->r.f)  > 0) ||
-			( (g->l.open ||  h->r.open) && mpf_cmp(g->l.f, h->r.f) == 0)
+			( (g->l.open ||  h->r.open) && mpf_cmp(g->l.f, h->r.f) == 0 && (!(g->l.inf ^ h->r.inf)))
 		);
 }
 
