@@ -84,4 +84,62 @@ void gbnd_clear(gbnd_s *gb);
 }
 #endif
 
+	/*
+	Comparison of interval end points
+
+	Key:
+	C = closed
+	O = open
+	L = left interval end
+	R = right interval end
+	- = less than
+	0 = equal to
+	+ = greater than
+
+	C,L C,L : [n  [n  : 0
+	C,L C,R : [n   n] : 0
+	C,R C,L :  n] [n  : 0
+	C,R C,R :  n]  n] : 0
+
+	C,L O,L : [n  (n  : -
+	C,L O,R : [n   n) : +
+	C,R O,L :  n] (n  : -
+	C,R O,R :  n]  n) : +
+
+	O,L C,L : (n  [n  : +
+	O,L C,R : (n   n] : +
+	O,R C,L :  n) [n  : -
+	O,R C,R :  n)  n] : -
+
+	O,L O,L : (n  (n  : 0
+	O,L O,R : (n   n) : +
+	O,R O,L :  n) (n  : -
+	O,R O,R :  n)  n) : 0
+
+	   0 1 2
+	   R C L
+	0R 0 - -
+	1C + 0 -
+	2L + + 0
+	*/
+
+static inline int cmp_gn(const gnum_s *x, end_t xe, const gnum_s *y, end_t ye)
+{
+	int res;
+
+	if ( x->inf && !y->inf) return  mpf_sgn(x->f);
+	if (!x->inf &&  y->inf) return -mpf_sgn(y->f);
+	if ((res = mpf_cmp(x->f, y->f)) != 0) return res;
+	return ((x->open)?xe:1) - ((y->open)?ye:1);
+}
+
+/* Negates numerical part of an endpoint. */
+
+static inline void neg_gn(gnum_s *a, const gnum_s *x)
+{
+	mpf_neg(a->f, x->f);
+	a->inf  = x->inf;
+	a->open = x->open;
+}
+
 #endif /* GLAYER_H_ */

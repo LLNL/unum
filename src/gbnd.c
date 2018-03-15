@@ -29,79 +29,18 @@
 
 /* scratchpad */
 
-	/*
-	Comparison of interval end points
-
-	Key:
-	C = closed
-	O = open
-	L = left interval end
-	R = right interval end
-	- = less than
-	0 = equal to
-	+ = greater than
-
-	C,L C,L : [n  [n  : 0
-	C,L C,R : [n   n] : 0
-	C,R C,L :  n] [n  : 0
-	C,R C,R :  n]  n] : 0
-
-	C,L O,L : [n  (n  : -
-	C,L O,R : [n   n) : +
-	C,R O,L :  n] (n  : -
-	C,R O,R :  n]  n) : +
-
-	O,L C,L : (n  [n  : +
-	O,L C,R : (n   n] : +
-	O,R C,L :  n) [n  : -
-	O,R C,R :  n)  n] : -
-
-	O,L O,L : (n  (n  : 0
-	O,L O,R : (n   n) : +
-	O,R O,L :  n) (n  : -
-	O,R O,R :  n)  n) : 0
-
-	   0 1 2
-	   R C L
-	0R 0 - -
-	1C + 0 -
-	2L + + 0
-	*/
-
-int cmp(const gnum_s *x, end_t xe, const gnum_s *y, end_t ye)
-{
-	int res;
-
-	if ( x->inf && !y->inf) return  mpf_sgn(x->f);
-	if (!x->inf &&  y->inf) return -mpf_sgn(y->f);
-	if ((res = mpf_cmp(x->f, y->f)) != 0) return res;
-	return ((x->open^1)?1:xe) - ((y->open^1)?1:ye);
-}
-
 /* Test if interval g is strictly less than interval h. */
 
 int ltgQ(const gbnd_s *g, const gbnd_s *h)
 {
-	return !(g->nan || h->nan) &&
-		(
-			(  g->r.inf  && !h->l.inf   && mpf_sgn(g->r.f) < 0) ||
-			(! g->r.inf  &&  h->l.inf   && mpf_sgn(h->l.f) > 0) ||
-			(!(g->r.inf   ^  h->l.inf)  && mpf_cmp(g->r.f, h->l.f)  < 0) ||
-			( (g->r.open ||  h->l.open) && mpf_cmp(g->r.f, h->l.f) == 0)
-		);
+	return !(g->nan || h->nan) && cmp_gn(&g->r, RE, &h->l, LE) < 0;
 }
 
 /* Test if interval g is strictly greater than interval h. */
 
 int gtgQ(const gbnd_s *g, const gbnd_s *h)
 {
-	return !(g->nan || h->nan) &&
-		(
-			(  g->l.inf  && !h->r.inf   && mpf_sgn(g->l.f) > 0) ||
-			(! g->l.inf  &&  h->r.inf   && mpf_sgn(h->r.f) < 0) ||
-			(!(g->l.inf   ^  h->r.inf)  && mpf_cmp(g->l.f, h->r.f)  > 0) ||
-			( (g->l.open ||  h->r.open) && mpf_cmp(g->l.f, h->r.f) == 0)
-		);
+	return !(g->nan || h->nan) && cmp_gn(&g->l, LE, &h->r, RE) > 0;
 }
 
 /* Test if interval g is nowhere equal to interval h. */
@@ -139,7 +78,7 @@ int samegQ(const gbnd_s *g, const gbnd_s *h)
 int cmpgQ(const gbnd_s *g, end_t ge, const gbnd_s *h, end_t he)
 {
 	if (g->nan || h->nan) return 0; /* FIXME: what about NaNs? */
-	else return cmp(ge==LE ? &g->l : &g->r, ge, he==LE ? &h->l : &h->r, he);
+	else return cmp_gn(ge==LE ? &g->l : &g->r, ge, he==LE ? &h->l : &h->r, he);
 }
 
 /* Test if interval g spans zero. */
@@ -197,7 +136,7 @@ void plusg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 #if 0
 		{
 			mpf_t tmpf;
-			mpf_init2(tmpf, UPREC);
+			mpf_init2(tmpf, PBITS);
 			mpf_neg(tmpf, maxreal);
 			if (mpf_cmp(a->l.f, tmpf) < 0) {
 				mpf_set_si(a->l.f, -1); a->l.inf = 1; a->l.open = 1;
@@ -241,7 +180,7 @@ void plusg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 #if 0
 		{
 			mpf_t tmpf;
-			mpf_init2(tmpf, UPREC);
+			mpf_init2(tmpf, PBITS);
 			mpf_neg(tmpf, maxreal);
 			if (mpf_cmp(a->r.f, tmpf) < 0) {
 				mpf_set(a->r.f, tmpf); a->r.inf = 0; a->r.open = 1;
@@ -273,18 +212,9 @@ void minusg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	gbnd_clear(&gb);
 }
 
-/* Helper function for times and divide; negates numerical part of an endpoint. */
-
-void neg(gnum_s *a, const gnum_s *x)
-{
-	mpf_neg(a->f, x->f);
-	a->inf  = x->inf;
-	a->open = x->open;
-}
-
 /* The "left" multiplication table for general intervals. */
 
-int timesposleft(gnum_s *a, const gnum_s *x, const gnum_s *y)
+static int timesposleft(gnum_s *a, const gnum_s *x, const gnum_s *y)
 {
 	int nan = 0;
 
@@ -312,7 +242,7 @@ int timesposleft(gnum_s *a, const gnum_s *x, const gnum_s *y)
 
 /* The "right" multiplication table for general intervals. */
 
-int timesposright(gnum_s *a, const gnum_s *x, const gnum_s *y)
+static int timesposright(gnum_s *a, const gnum_s *x, const gnum_s *y)
 {
 	int nan = 0;
 
@@ -369,10 +299,10 @@ void timesg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Upper right corner is in lower left quadrant, facing uphill: */
 	if ((mpf_sgn(x->r.f) < 0 || ((mpf_sgn(x->r.f) == 0) && x->r.open)) &&
 	    (mpf_sgn(y->r.f) < 0 || ((mpf_sgn(y->r.f) == 0) && y->r.open))) {
-		neg(&xgn, &x->r);
-		neg(&ygn, &y->r);
+		neg_gn(&xgn, &x->r);
+		neg_gn(&ygn, &y->r);
 		a->nan |= timesposleft(&agn, &xgn, &ygn);
-		if (!a->nan && cmp(&agn, LE, &lcan, LE) < 0) {
+		if (!a->nan && cmp_gn(&agn, LE, &lcan, LE) < 0) {
 			mpf_set(lcan.f, agn.f);
 			lcan.inf = agn.inf;
 			lcan.open = agn.open;
@@ -381,10 +311,10 @@ void timesg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Upper left corner is in upper left quadrant, facing uphill: */
 	if ((mpf_sgn(x->l.f) < 0 || ((mpf_sgn(x->l.f) == 0) && !x->l.open)) &&
 	    (mpf_sgn(y->r.f) > 0 || ((mpf_sgn(y->r.f) == 0) && !y->r.open))) {
-		neg(&xgn, &x->l);
+		neg_gn(&xgn, &x->l);
 		a->nan |= timesposright(&agn, &xgn, &y->r);
-		neg(&agn, &agn);
-		if (!a->nan && cmp(&agn, LE, &lcan, LE) < 0) {
+		neg_gn(&agn, &agn);
+		if (!a->nan && cmp_gn(&agn, LE, &lcan, LE) < 0) {
 			mpf_set(lcan.f, agn.f);
 			lcan.inf = agn.inf;
 			lcan.open = agn.open;
@@ -393,10 +323,10 @@ void timesg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Lower right corner is in lower right quadrant, facing uphill: */
 	if ((mpf_sgn(x->r.f) > 0 || ((mpf_sgn(x->r.f) == 0) && !x->r.open)) &&
 	    (mpf_sgn(y->l.f) < 0 || ((mpf_sgn(y->l.f) == 0) && !y->l.open))) {
-		neg(&ygn, &y->l);
+		neg_gn(&ygn, &y->l);
 		a->nan |= timesposright(&agn, &x->r, &ygn);
-		neg(&agn, &agn);
-		if (!a->nan && cmp(&agn, LE, &lcan, LE) < 0) {
+		neg_gn(&agn, &agn);
+		if (!a->nan && cmp_gn(&agn, LE, &lcan, LE) < 0) {
 			mpf_set(lcan.f, agn.f);
 			lcan.inf = agn.inf;
 			lcan.open = agn.open;
@@ -411,10 +341,10 @@ void timesg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Lower left corner is in lower left quadrant, facing downhill: */
 	if ((mpf_sgn(x->l.f) < 0 || ((mpf_sgn(x->l.f) == 0) && !x->l.open)) &&
 	    (mpf_sgn(y->l.f) < 0 || ((mpf_sgn(y->l.f) == 0) && !y->l.open))) {
-		neg(&xgn, &x->l);
-		neg(&ygn, &y->l);
+		neg_gn(&xgn, &x->l);
+		neg_gn(&ygn, &y->l);
 		a->nan |= timesposright(&agn, &xgn, &ygn);
-		if (!a->nan && cmp(&agn, RE, &rcan, RE) > 0) {
+		if (!a->nan && cmp_gn(&agn, RE, &rcan, RE) > 0) {
 			mpf_set(rcan.f, agn.f);
 			rcan.inf = agn.inf;
 			rcan.open = agn.open;
@@ -423,10 +353,10 @@ void timesg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Lower right corner is in upper left quadrant, facing downhill: */
 	if ((mpf_sgn(x->r.f) < 0 || ((mpf_sgn(x->r.f) == 0) && x->r.open)) &&
 	    (mpf_sgn(y->l.f) >= 0)) {
-		neg(&xgn, &x->r);
+		neg_gn(&xgn, &x->r);
 		a->nan |= timesposleft(&agn, &xgn, &y->l);
-		neg(&agn, &agn);
-		if (!a->nan && cmp(&agn, RE, &rcan, RE) > 0) {
+		neg_gn(&agn, &agn);
+		if (!a->nan && cmp_gn(&agn, RE, &rcan, RE) > 0) {
 			mpf_set(rcan.f, agn.f);
 			rcan.inf = agn.inf;
 			rcan.open = agn.open;
@@ -435,10 +365,10 @@ void timesg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Upper left corner is in lower right quadrant, facing downhill: */
 	if ((mpf_sgn(x->l.f) >= 0) &&
 	    (mpf_sgn(y->r.f) < 0 || ((mpf_sgn(y->r.f) == 0) && y->r.open))) {
-		neg(&ygn, &y->r);
+		neg_gn(&ygn, &y->r);
 		a->nan |= timesposleft(&agn, &x->l, &ygn);
-		neg(&agn, &agn);
-		if (!a->nan && cmp(&agn, RE, &rcan, RE) > 0) {
+		neg_gn(&agn, &agn);
+		if (!a->nan && cmp_gn(&agn, RE, &rcan, RE) > 0) {
 			mpf_set(rcan.f, agn.f);
 			rcan.inf = agn.inf;
 			rcan.open = agn.open;
@@ -467,7 +397,7 @@ void timesg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 
 /* The "left" division table for general intervals. */
 
-int divideposleft(gnum_s *a, const gnum_s *x, const gnum_s *y)
+static int divideposleft(gnum_s *a, const gnum_s *x, const gnum_s *y)
 {
 	int nan = 0;
 
@@ -490,7 +420,7 @@ int divideposleft(gnum_s *a, const gnum_s *x, const gnum_s *y)
 
 /* The "right" division table for general intervals. */
 
-int divideposright(gnum_s *a, const gnum_s *x, const gnum_s *y)
+static int divideposright(gnum_s *a, const gnum_s *x, const gnum_s *y)
 {
 	int nan = 0;
 
@@ -546,10 +476,10 @@ void divideg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Lower right corner is in lower left quadrant, facing uphill: */
 	if ((mpf_sgn(x->r.f) < 0 || ((mpf_sgn(x->r.f) == 0) &&  x->r.open)) &&
 	    (mpf_sgn(y->l.f) < 0 || ((mpf_sgn(y->l.f) == 0) && !y->l.open))) {
-		neg(&xgn, &x->r);
-		neg(&ygn, &y->l);
+		neg_gn(&xgn, &x->r);
+		neg_gn(&ygn, &y->l);
 		a->nan |= divideposleft(&agn, &xgn, &ygn);
-		if (!a->nan && cmp(&agn, LE, &lcan, LE) < 0) {
+		if (!a->nan && cmp_gn(&agn, LE, &lcan, LE) < 0) {
 			mpf_set(lcan.f, agn.f);
 			lcan.inf = agn.inf;
 			lcan.open = agn.open;
@@ -558,10 +488,10 @@ void divideg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Lower left corner is in upper left quadrant, facing uphill: */
 	if ((mpf_sgn(x->l.f) < 0 || ((mpf_sgn(x->l.f) == 0) && !x->l.open)) &&
 	    mpf_sgn(y->l.f) >= 0) {
-		neg(&xgn, &x->l);
+		neg_gn(&xgn, &x->l);
 		a->nan |= divideposright(&agn, &xgn, &y->l);
-		neg(&agn, &agn);
-		if (!a->nan && cmp(&agn, LE, &lcan, LE) < 0) {
+		neg_gn(&agn, &agn);
+		if (!a->nan && cmp_gn(&agn, LE, &lcan, LE) < 0) {
 			mpf_set(lcan.f, agn.f);
 			lcan.inf = agn.inf;
 			lcan.open = agn.open;
@@ -570,10 +500,10 @@ void divideg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Upper right corner is in lower right quadrant, facing uphill: */
 	if ((mpf_sgn(x->r.f) > 0 || ((mpf_sgn(x->r.f) == 0) && !x->r.open)) &&
 	    (mpf_sgn(y->r.f) < 0 || ((mpf_sgn(y->r.f) == 0) &&  y->r.open))) {
-		neg(&ygn, &y->r);
+		neg_gn(&ygn, &y->r);
 		a->nan |= divideposright(&agn, &x->r, &ygn);
-		neg(&agn, &agn);
-		if (!a->nan && cmp(&agn, LE, &lcan, LE) < 0) {
+		neg_gn(&agn, &agn);
+		if (!a->nan && cmp_gn(&agn, LE, &lcan, LE) < 0) {
 			mpf_set(lcan.f, agn.f);
 			lcan.inf = agn.inf;
 			lcan.open = agn.open;
@@ -588,10 +518,10 @@ void divideg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Upper left corner is in lower left quadrant, facing downhill: */
 	if ((mpf_sgn(x->l.f) < 0 || ((mpf_sgn(x->l.f) == 0) && !x->l.open)) &&
 	    (mpf_sgn(y->r.f) < 0 || ((mpf_sgn(y->r.f) == 0) &&  y->r.open))) {
-		neg(&xgn, &x->l);
-		neg(&ygn, &y->r);
+		neg_gn(&xgn, &x->l);
+		neg_gn(&ygn, &y->r);
 		a->nan |= divideposright(&agn, &xgn, &ygn);
-		if (!a->nan && cmp(&agn, RE, &rcan, RE) > 0) {
+		if (!a->nan && cmp_gn(&agn, RE, &rcan, RE) > 0) {
 			mpf_set(rcan.f, agn.f);
 			rcan.inf = agn.inf;
 			rcan.open = agn.open;
@@ -600,10 +530,10 @@ void divideg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Upper right corner is in upper left quadrant, facing downhill: */
 	if ((mpf_sgn(x->r.f) < 0 || ((mpf_sgn(x->r.f) == 0) &&  x->r.open)) &&
 	    (mpf_sgn(y->r.f) > 0 || ((mpf_sgn(y->r.f) == 0) && !y->r.open))) {
-		neg(&xgn, &x->r);
+		neg_gn(&xgn, &x->r);
 		a->nan |= divideposleft(&agn, &xgn, &y->r);
-		neg(&agn, &agn);
-		if (!a->nan && cmp(&agn, RE, &rcan, RE) > 0) {
+		neg_gn(&agn, &agn);
+		if (!a->nan && cmp_gn(&agn, RE, &rcan, RE) > 0) {
 			mpf_set(rcan.f, agn.f);
 			rcan.inf = agn.inf;
 			rcan.open = agn.open;
@@ -612,10 +542,10 @@ void divideg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	/* Lower left corner is in lower right quadrant, facing downhill: */
 	if (mpf_sgn(x->l.f) >= 0 &&
 	    (mpf_sgn(y->l.f) < 0 || ((mpf_sgn(y->l.f) == 0) && !y->l.open))) {
-		neg(&ygn, &y->l);
+		neg_gn(&ygn, &y->l);
 		a->nan |= divideposleft(&agn, &x->l, &ygn);
-		neg(&agn, &agn);
-		if (!a->nan && cmp(&agn, RE, &rcan, RE) > 0) {
+		neg_gn(&agn, &agn);
+		if (!a->nan && cmp_gn(&agn, RE, &rcan, RE) > 0) {
 			mpf_set(rcan.f, agn.f);
 			rcan.inf = agn.inf;
 			rcan.open = agn.open;
@@ -670,7 +600,7 @@ void squareg(gbnd_s *a, const gbnd_s *g)
 	t2.inf = g->r.inf;
 	t2.open = g->r.open;
 
-	if (cmp(&t1, RE, &t2, RE) > 0) {
+	if (cmp_gn(&t1, RE, &t2, RE) > 0) {
 		aL = &t2; aR = &t1;
 	} else {
 		aL = &t1; aR = &t2;
@@ -831,7 +761,7 @@ void ming(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	}
 	a->nan = 0;
 
-	if (cmp(&x->l, LE, &y->l, LE) < 0) {
+	if (cmp_gn(&x->l, LE, &y->l, LE) < 0) {
 		mpf_set(a->l.f, x->l.f);
 		a->l.inf = x->l.inf;
 		a->l.open = x->l.open;
@@ -840,7 +770,7 @@ void ming(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 		a->l.inf = y->l.inf;
 		a->l.open = y->l.open;
 	}
-	if (cmp(&x->r, RE, &y->r, RE) < 0) {
+	if (cmp_gn(&x->r, RE, &y->r, RE) < 0) {
 		mpf_set(a->r.f, x->r.f);
 		a->r.inf = x->r.inf;
 		a->r.open = x->r.open;
@@ -864,7 +794,7 @@ void maxg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 	}
 	a->nan = 0;
 
-	if (cmp(&x->l, LE, &y->l, LE) > 0) {
+	if (cmp_gn(&x->l, LE, &y->l, LE) > 0) {
 		mpf_set(a->l.f, x->l.f);
 		a->l.inf = x->l.inf;
 		a->l.open = x->l.open;
@@ -873,7 +803,7 @@ void maxg(gbnd_s *a, const gbnd_s *x, const gbnd_s *y)
 		a->l.inf = y->l.inf;
 		a->l.open = y->l.open;
 	}
-	if (cmp(&x->r, RE, &y->r, RE) > 0) {
+	if (cmp_gn(&x->r, RE, &y->r, RE) > 0) {
 		mpf_set(a->r.f, x->r.f);
 		a->r.inf = x->r.inf;
 		a->r.open = x->r.open;
@@ -899,7 +829,7 @@ int cliplg(gbnd_s *a, const gbnd_s *g, const gbnd_s *h)
 	}
 	a->nan = 0;
 
-	if (cmp(&g->l, LE, &h->l, LE) < 0) {
+	if (cmp_gn(&g->l, LE, &h->l, LE) < 0) {
 		mpf_set(a->l.f, h->l.f);
 		a->l.inf = h->l.inf;
 		a->l.open = h->l.open;
@@ -909,7 +839,7 @@ int cliplg(gbnd_s *a, const gbnd_s *g, const gbnd_s *h)
 		a->l.inf = g->l.inf;
 		a->l.open = g->l.open;
 	}
-	if (cmp(&g->r, RE, &h->r, RE) < 0) {
+	if (cmp_gn(&g->r, RE, &h->r, RE) < 0) {
 		mpf_set(a->r.f, h->r.f);
 		a->r.inf = h->r.inf;
 		a->r.open = h->r.open;
@@ -937,7 +867,7 @@ int cliphg(gbnd_s *a, const gbnd_s *g, const gbnd_s *h)
 	}
 	a->nan = 0;
 
-	if (cmp(&g->l, LE, &h->l, LE) > 0) {
+	if (cmp_gn(&g->l, LE, &h->l, LE) > 0) {
 		mpf_set(a->l.f, h->l.f);
 		a->l.inf = h->l.inf;
 		a->l.open = h->l.open;
@@ -947,7 +877,7 @@ int cliphg(gbnd_s *a, const gbnd_s *g, const gbnd_s *h)
 		a->l.inf = g->l.inf;
 		a->l.open = g->l.open;
 	}
-	if (cmp(&g->r, RE, &h->r, RE) > 0) {
+	if (cmp_gn(&g->r, RE, &h->r, RE) > 0) {
 		mpf_set(a->r.f, h->r.f);
 		a->r.inf = h->r.inf;
 		a->r.open = h->r.open;

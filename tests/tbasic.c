@@ -354,6 +354,7 @@ int main(int argc, char *argv[])
 		UBND_STR("(23.1,23.9)", "(23.099853515625,23.900146484375)");
 		UBND_STR("(-Inf,-4]", "(-Inf,-4]");
 		UBND_STR("(-Inf,-3]", "(-Inf,-3]");
+		UBND_STR("(1,Inf)", "(1,Inf)");
 
 		tfail |= fail;
 	}
@@ -382,7 +383,11 @@ int main(int argc, char *argv[])
 		UBND_ROP("[1,3]", lt, "[3,100]", 0);
 		UBND_ROP("[1,3]", lt, "(3,100]", 1);
 		UBND_ROP("-2", lt, "-1", 1);
+		UBND_ROP("(2,Inf)", lt, "(1,Inf)", 0);
+		UBND_ROP("(-Inf,-1)", lt, "(-Inf,1)", 0);
 		UBND_ROP("Inf", gt, "Inf", 0);
+		UBND_ROP("(1,Inf)", gt, "(2,Inf)", 0);
+		UBND_ROP("(-Inf,1)", gt, "(-Inf,-1)", 0);
 		UBND_ROP("[1,2]", neq, "[3,4]", 1);
 		UBND_ROP("[1,3]", neq, "[2,4]", 0);
 		UBND_ROP("4", seq, "(4,4.0625)", 0);
@@ -413,6 +418,7 @@ int main(int argc, char *argv[])
 		UBND_AOP("[3,7]", div, "[0,1)", "NaN");
 		UBND_AOP("21", div, "7", "3");
 		UBND_AOP("(25,26.8125)", div, "(4,4.125)", "(6.060606,6.703125)");
+		UBND_AOP("2", div, "(0,2]", "[1,Inf)");
 
 #define UBND_OP(oper,op1,chk) \
 		ubnd_set_str(ub1, op1); \

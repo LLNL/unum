@@ -143,7 +143,7 @@ signed long g2si(const gbnd_s *g)
 	mpf_t tmpf;
 
 	if (g->nan) return 0;
-	mpf_init2(tmpf, UPREC);
+	mpf_init2(tmpf, PBITS);
 	inf = midpoint(tmpf, g);
 	/* TODO: round? */
 	if (inf < 0 || mpf_cmp_si(tmpf, LONG_MIN) < 0) rop = LONG_MIN;
@@ -160,7 +160,7 @@ unsigned long g2ui(const gbnd_s *g)
 	mpf_t tmpf;
 
 	if (g->nan) return 0;
-	mpf_init2(tmpf, UPREC);
+	mpf_init2(tmpf, PBITS);
 	inf = midpoint(tmpf, g);
 	/* TODO: round? */
 	if (inf < 0 || mpf_sgn(tmpf) < 0) rop = 0;
@@ -177,7 +177,7 @@ double g2d(const gbnd_s *g)
 	mpf_t tmpf;
 
 	if (g->nan) return NAN;
-	mpf_init2(tmpf, UPREC);
+	mpf_init2(tmpf, PBITS);
 	inf = midpoint(tmpf, g);
 	/* TODO: round? */
 	if (inf < 0) rop = -INFINITY;
@@ -193,7 +193,7 @@ mpf_s *g2f(mpf_s *f, const gbnd_s *g)
 	mpf_t negmaxreal;
 
 	if (g->nan) {mpf_set_ui(f, 0); return f;}
-	mpf_init2(negmaxreal, UPREC);
+	mpf_init2(negmaxreal, PBITS);
 	inf = midpoint(f, g);
 	/* TODO: round? */
 	mpf_neg(negmaxreal, maxreal);
@@ -454,8 +454,8 @@ void f2u(unum_s *u, const mpf_s *f)
 	}
 	/* For subnormal numbers, divide by the ULP value to get the
 	   fractional part. The While loop strips off trailing bits. */
-	mpf_init2(tmp1, UPREC);
-	mpf_init2(tmp2, UPREC);
+	mpf_init2(tmp1, PBITS);
+	mpf_init2(tmp2, PBITS);
 	u2f(tmp1, smallnormalu);
 	if (mpf_cmp(absf, tmp1) < 0) {
 		unsigned long efbits = mpx_get_ui(efsizemask);
@@ -706,7 +706,7 @@ void u2g(gbnd_s *a, const ubnd_s *ub)
 /* Seek a single-ULP enclosure for a ubound >= zero. */
 /* unifypos is only called by unify which screens for NaN & Inf */
 
-void unifypos(ubnd_s *a, const ubnd_s *ub)
+static void unifypos(ubnd_s *a, const ubnd_s *ub)
 {
 	utag_s ut;
 	unum_s *u;
@@ -888,7 +888,8 @@ void unifypos(ubnd_s *a, const ubnd_s *ub)
 #endif
 		exp = 1-exp;
 		/* floor(log2(x)): 5->2, 4->2, 3->1, 2->1, 1->0 */
-		for (n = 0; exp; exp >>= 1, n++) ; n--;
+		for (n = 0; exp; exp >>= 1, n++) ;
+		n--;
 		if (esizemax < n) n = esizemax;
 		a->p = 0;
 		mpf_init2(tmpf, 1); /* only needs one bit of precision */
@@ -980,7 +981,7 @@ void unify(ubnd_s *a, const ubnd_s *ub)
 		return;
 	}
 	if (ltgQ(&gu,&zero) && ltgQ(&gv,&zero)) {
-		/* TODO: add a neg(unum_s *, const unum_s *) function to support.c? */
+		/* TODO: add a neg_un(unum_s *, const unum_s *) to ulayer or support. */
 		/* ubnd.h not included here */
 		void negateu(ubnd_s *a, const ubnd_s *u);
 		negateu(&uba, ub);
@@ -1050,7 +1051,7 @@ void unify(ubnd_s *a, const ubnd_s *ub)
 
 /* Find the left half of a ubound (numerical value and open-closed bit). */
 
-void ubleft(unum_s *u, const gnum_s *gn)
+static void ubleft(unum_s *u, const gnum_s *gn)
 {
 	mpf_t tmpf;
 
@@ -1059,7 +1060,7 @@ void ubleft(unum_s *u, const gnum_s *gn)
 		else mpx_set(u, neginfu);
 		return;
 	}
-	mpf_init2(tmpf, UPREC);
+	mpf_init2(tmpf, PBITS);
 	/* TODO: reduce f2u calls. g2u() does one before calling ubleft(). */
 	f2u(u, gn->f);
 	u2f(tmpf, u);
@@ -1079,7 +1080,7 @@ void ubleft(unum_s *u, const gnum_s *gn)
 /* Find the right half of a ubound (numerical value and open-closed bit).
    Not exactly the reverse of ubleft, because of "negative zero". */
 
-void ubright(unum_s *u, const gnum_s *gn)
+static void ubright(unum_s *u, const gnum_s *gn)
 {
 	mpf_t tmpf;
 
@@ -1092,7 +1093,7 @@ void ubright(unum_s *u, const gnum_s *gn)
 		mpx_set(u, negopenzerou);
 		return;
 	}
-	mpf_init2(tmpf, UPREC);
+	mpf_init2(tmpf, PBITS);
 	/* TODO: reduce f2u calls. g2u() does one before calling ubright(). */
 	f2u(u, gn->f);
 	u2f(tmpf, u);
@@ -1115,21 +1116,13 @@ void g2u(ubnd_s *a, const gbnd_s *g)
 {
 // printf(" g2u: "); print_gb(g);
 	/* Get rid of the NaN cases first. */
-	if (   g->nan ||
-		(  g->l.inf  && !g->r.inf   && mpf_sgn(g->l.f) > 0) ||
-		(! g->l.inf  &&  g->r.inf   && mpf_sgn(g->r.f) < 0) ||
-		(!(g->l.inf   ^  g->r.inf)  && mpf_cmp(g->l.f,g->r.f) > 0) ||
-#if defined(XOR_PATCH)
-		/* FIXME: detect when g-layer truncation occurs */
-		/* Proto difference: use xor instead of ior. */
-		/* Instead of throwing a NaN when g-layer truncation occurs,
-		   this allows a close but incorrect number to pass through. */
-		( (g->l.open   ^  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0)
-#else
-		( (g->l.open  ||  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0)
+	if (g->nan || cmp_gn(&g->l, LE, &g->r, RE) > 0) {
+#if defined(WARN_TRUNC)
+		/* NOTE: warn when g-layer truncation may have occurred */
+		if ((g->l.open && g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0 && !(g->l.inf ^ g->r.inf)) {
+			printf(" g-layer truncation may have occurred: "); print_gb(g); putchar('\n');
+		}
 #endif
-		)
-	{
 		a->p = 0;
 		mpx_set(a->l, qNaNu);
 		mpx_set(a->r, a->l);
@@ -1208,28 +1201,20 @@ void g2ur(ubnd_s *a, const gbnd_s *g)
 
 	a->p = 0;
 	/* NaN case */
-	if (   g->nan ||
-		(  g->l.inf  && !g->r.inf   && mpf_sgn(g->l.f) > 0) ||
-		(! g->l.inf  &&  g->r.inf   && mpf_sgn(g->r.f) < 0) ||
-		(!(g->l.inf   ^  g->r.inf)  && mpf_cmp(g->l.f,g->r.f) > 0) ||
-#if defined(XOR_PATCH)
-		/* FIXME: detect when g-layer truncation occurs */
-		/* Proto difference: use xor instead of ior. */
-		/* Instead of throwing a NaN when g-layer truncation occurs,
-		   this allows a close but incorrect number to pass through. */
-		( (g->l.open   ^  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0)
-#else
-		( (g->l.open  ||  g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0)
+	if (g->nan || cmp_gn(&g->l, LE, &g->r, RE) > 0) {
+#if defined(WARN_TRUNC)
+		/* NOTE: warn when g-layer truncation may have occurred */
+		if ((g->l.open && g->r.open) && mpf_cmp(g->l.f,g->r.f) == 0 && !(g->l.inf ^ g->r.inf)) {
+			printf(" g-layer truncation may have occurred: "); print_gb(g); putchar('\n');
+		}
 #endif
-		)
-	{
 		mpx_set(a->l, qNaNu);
 		mpx_set(a->r, a->l);
 		AOP1("NaN",a,ub,g2ur,g,gb);
 		return;
 	}
 	/* Average the endpoint values and convert to a unum. */
-	mpf_init2(tmpf, UPREC);
+	mpf_init2(tmpf, PBITS);
 	inf = midpoint(tmpf, g);
 	if (inf > 0) mpx_set(a->l, posinfu);
 	else if (inf < 0) mpx_set(a->l, neginfu);
@@ -1256,7 +1241,7 @@ void guessu(unum_s *a, const ubnd_s *ub)
 		return;
 	}
 	/* Average the endpoint values and convert to a unum. */
-	mpf_init2(tmpf, UPREC);
+	mpf_init2(tmpf, PBITS);
 	inf = midpoint(tmpf, &gb);
 	if (inf > 0) mpx_set(a, posinfu);
 	else if (inf < 0) mpx_set(a, neginfu);
