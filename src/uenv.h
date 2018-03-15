@@ -44,14 +44,13 @@
 /* +1 for hidden bit, +1 for extra precision in calc. */
 #define FSIZE2PREC(n) ((n)+2+128)
 
-/* TODO: rename to PBITS? */
 /* Precision in bits of MPF variable */
-#define UPREC uprec
-#define MAX_UPREC FSIZE2PREC(MAX_FSIZE)
+#define PBITS pbits
+#define MAX_PBITS FSIZE2PREC(MAX_FSIZE)
 
 /* Precision in limbs of MPF variable */
 #define PLIMBS plimbs
-#define MAX_PLIMBS MPF_BITS2LIMBS(MAX_UPREC)
+#define MAX_PLIMBS MPF_BITS2LIMBS(MAX_PBITS)
 
 #if (1 + MAX_ESIZESIZE + MAX_FSIZESIZE) > GMP_NUMB_BITS
 #error "utag size exceeds GMP limb size"
@@ -66,7 +65,7 @@ extern int maxubits;
 
 extern mp_size_t ulimbs;
 extern mp_size_t plimbs;
-extern mp_bitcnt_t uprec;
+extern mp_bitcnt_t pbits;
 
 extern mpx_t one;
 extern mpx_t ubitmask;

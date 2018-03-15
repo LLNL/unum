@@ -28,6 +28,8 @@
 
 #include "ulayer.h"
 
+/* serves as a companion to ulayer */
+
 typedef struct {
 	unsigned int fsize;
 	unsigned int esize;

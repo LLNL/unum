@@ -4,7 +4,7 @@
 
 # Boilerplate.
 # AC_PREREQ([2.69])
-AC_INIT([unum], [1.0.1], [scott@llnl.gov])
+AC_INIT([unum], [1.0.2], [scott@llnl.gov])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([src/conv.c])
 AC_CONFIG_HEADERS([config.h])

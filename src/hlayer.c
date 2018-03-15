@@ -430,8 +430,7 @@ void view_uenv(void)
 {
 	if (MPX_PTR(one) == NULL) return;
 
-#define SHOWI(i) printf("%-15s: %d\n", #i, i);
-#define SHOWL(i) printf("%-15s: %ld\n", #i, i);
+#define SHOWI(i) printf("%-15s: %d\n", #i, (int)i);
 	printf("\n# int sizes #\n");
 	SHOWI(esizesize);
 	SHOWI(fsizesize);
@@ -439,7 +438,9 @@ void view_uenv(void)
 	SHOWI(fsizemax);
 	SHOWI(utagsize);
 	SHOWI(maxubits);
-	SHOWL(ulimbs); /* long int */
+	SHOWI(ulimbs);
+	SHOWI(pbits);
+	SHOWI(plimbs);
 
 #define SHOWM(m) gmp_printf("%-15s: 0x%Nx\n", #m, MPX_PTR(m), ulimbs);
 	printf("\n# unum masks #\n");

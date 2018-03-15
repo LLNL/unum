@@ -54,7 +54,7 @@
 } while (0)
 #if 0
 	mpf_t tfw; \
-	mpf_init2(tfw, UPREC); \
+	mpf_init2(tfw, PBITS); \
 	mpf_sub(tfw, tgb.r.f, tgb.l.f); \
 	mpf_mul_2exp(tfw, tfw, 15); \
 		|| mpf_cmp(tfw, maxreal) > 0 \
@@ -91,7 +91,7 @@ static int nbits(const ubnd_s *u)
 	return total;
 }
 
-void tally2(const ubnd_s *a, const ubnd_s *u)
+static void tally2(const ubnd_s *a, const ubnd_s *u)
 {
 	stats.ubitsmoved += nbits(a) + nbits(u);
 	stats.ubndsmoved += 2;
@@ -99,7 +99,7 @@ void tally2(const ubnd_s *a, const ubnd_s *u)
 	stats.opc2[INTERVAL(a)][INTERVAL(u)]++;
 }
 
-void tally3(const ubnd_s *a, const ubnd_s *u, const ubnd_s *v)
+static void tally3(const ubnd_s *a, const ubnd_s *u, const ubnd_s *v)
 {
 	stats.ubitsmoved += nbits(a) + nbits(u) + nbits(v);
 	stats.ubndsmoved += 3;

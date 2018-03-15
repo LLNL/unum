@@ -37,7 +37,7 @@ int maxubits;
 
 mp_size_t ulimbs;
 mp_size_t plimbs;
-mp_bitcnt_t uprec;
+mp_bitcnt_t pbits;
 
 mpx_t one;
 mpx_t ubitmask;
@@ -89,8 +89,8 @@ void init_uenv(void)
 	mpx_init2(posopeninfu, MAX_UBITS);
 	mpx_init2(negopenzerou, MAX_UBITS);
 
-	mpf_init2(maxreal, MAX_UPREC);
-	mpf_init2(smallsubnormal, MAX_UPREC);
+	mpf_init2(maxreal, MAX_PBITS);
+	mpf_init2(smallsubnormal, MAX_PBITS);
 
 	initialized = 1;
 }
@@ -146,8 +146,8 @@ void set_uenv(int e, int f)
 	utagsize = 1 + e + f;
 	maxubits = 1 + esizemax + fsizemax + utagsize;
 	ulimbs = MPX_BITS2LIMBS(maxubits);
-	uprec = FSIZE2PREC(fsizemax);
-	plimbs = MPF_BITS2LIMBS(uprec);
+	pbits = FSIZE2PREC(fsizemax);
+	plimbs = MPF_BITS2LIMBS(pbits);
 
 	/* unum type */
 	mpx_set_ui(one, 1);

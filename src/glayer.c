@@ -24,11 +24,11 @@
  */
 
 #include "glayer.h"
-#include "uenv.h" /* UPREC */
+#include "uenv.h" /* PBITS */
 
 void gnum_init(gnum_s *gn)
 {
-	mpf_init2(gn->f, UPREC);
+	mpf_init2(gn->f, PBITS);
 }
 
 void gnum_clear(gnum_s *gn)
@@ -38,8 +38,8 @@ void gnum_clear(gnum_s *gn)
 
 void gbnd_init(gbnd_s *g)
 {
-	mpf_init2(g->l.f, UPREC);
-	mpf_init2(g->r.f, UPREC);
+	mpf_init2(g->l.f, PBITS);
+	mpf_init2(g->r.f, PBITS);
 }
 
 void gbnd_clear(gbnd_s *g)
