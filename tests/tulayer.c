@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
 {
 	int nok = 0;
 	char *s;
+	int tfail = 0;
 
 	while (--argc > 0 && (*++argv)[0] == '-')
 		for (s = argv[0]+1; *s; s++)
@@ -423,9 +424,11 @@ int main(int argc, char *argv[])
 		UB_AOP("[4,8]", cliph, "(5,7)", "[4,7)");
 		UB_AOP("[4,8]", cliph, "(3,7)", "(3,7)");
 
+		tfail |= fail;
 	}
 #endif
 
 	clear_uenv();
-	return(EXIT_SUCCESS); /* or EXIT_FAILURE */
+	printf("\ntest %s\n", tfail ? "FAIL" : "OK");
+	return(tfail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
